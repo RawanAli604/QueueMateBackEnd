@@ -1,2 +1,2 @@
-db_URI = "postgresql://dujota@localhost:5432/teas_db"
+db_URI = "postgresql://rawan@123localhost:5432/QueueMate_db"
 secret = 'dasdsadadas'
