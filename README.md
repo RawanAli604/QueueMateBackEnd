@@ -22,3 +22,9 @@ QueueMate is a web application designed to enhance the customer experience at bu
 <img width="851" height="692" alt="Screenshot 2025-12-15 173634" src="https://github.com/user-attachments/assets/3949f296-2e80-4bb9-bbbe-ae198bc4e3b6" />
 
 **Wire Frames:**
+<img width="907" height="667" alt="Screenshot 2025-12-15 185143" src="https://github.com/user-attachments/assets/896caf54-18ce-463b-9563-4d3cefbc1306" />
+<img width="904" height="590" alt="Screenshot 2025-12-15 185204" src="https://github.com/user-attachments/assets/beb2bf35-1db3-4331-837e-e9226be20cd9" />
+<img width="899" height="676" alt="Screenshot 2025-12-15 185225" src="https://github.com/user-attachments/assets/3bc49def-8bcc-4d0d-bcd3-b1d6c0209dc6" />
+<img width="899" height="425" alt="Screenshot 2025-12-15 185242" src="https://github.com/user-attachments/assets/5c730979-4b44-4a4d-9c20-ac206114a36b" />
+<img width="899" height="573" alt="Screenshot 2025-12-15 185253" src="https://github.com/user-attachments/assets/7bb4aca9-dd5b-4558-80d6-ea085ef7f497" />
+
