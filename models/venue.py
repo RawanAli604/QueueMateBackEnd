@@ -9,4 +9,4 @@ class VenueModel(Base):
     name = Column(String, nullable=False)
     location = Column(String, nullable=False)
     max_capacity = Column(Integer, nullable=False)
-    avg_wait_time = Column(Integer, nullable=True)  # in minutes
+    avg_service_time = Column(Integer, nullable=True)  # in minutes
