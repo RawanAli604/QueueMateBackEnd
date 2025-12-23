@@ -8,8 +8,7 @@ class WaitlistEntryModel(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False)
-    # waiting, notified, seated, cancelled
-    status = Column(String, default="waiting")  
+    status = Column(String, default="pending")
     position = Column(Integer, nullable=False)
     estimated_wait_time = Column(Integer, nullable=True)
     timestamp = Column(DateTime, default=func.now())
