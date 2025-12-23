@@ -14,7 +14,8 @@ class UserSchema(BaseModel):
 class UserResponseSchema(BaseModel):
     username: str
     email: str
-
+    role: str
+    
     class Config:
         orm_mode = True
 
