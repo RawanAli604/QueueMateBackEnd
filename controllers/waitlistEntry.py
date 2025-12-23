@@ -52,3 +52,9 @@ def join_waitlist(entry: WaitlistEntrySchema, db: Session = Depends(get_db),
     db.commit()
     db.refresh(new_entry)
     return new_entry
+
+
+@router.get("/waitlist/my", response_model=List[WaitlistEntryResponseSchema])
+def get_my_waitlist(db: Session = Depends(get_db), current_user: UserModel = Depends(get_current_user)):
+    entries = db.query(WaitlistEntryModel).filter(WaitlistEntryModel.user_id == current_user.id).all()
+    return entries
