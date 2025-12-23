@@ -1,23 +1,18 @@
-# data/user_data.py
-
 from models.user import UserModel
 
-def create_test_users():
-    user1 = UserModel(username="arjun_dev", email="arjun@devmail.in")
-    user1.set_password("securepassword1")
+admin_user = UserModel(username="admin", email="admin@example.com", role="admin")
+admin_user.set_password("admin123")
 
-    user2 = UserModel(username="emma_johnson", email="emma.johnson@email.com")
-    user2.set_password("securepassword2")
+staff_user1 = UserModel(username="staff1", email="staff1@example.com", role="staff")
+staff_user1.set_password("staff123")
 
-    user3 = UserModel(username="fatima_ali", email="fatima.ali@mail.ae")
-    user3.set_password("securepassword3")
+staff_user2 = UserModel(username="staff2", email="staff2@example.com", role="staff")
+staff_user2.set_password("staff123")
 
-    user4 = UserModel(username="lucas_silva", email="lucas.silva@correo.br")
-    user4.set_password("securepassword4")
+user1 = UserModel(username="user1", email="user1@example.com", role="customer")
+user1.set_password("user123")
 
-    user5 = UserModel(username="elena_popov", email="elena.popov@mail.ru")
-    user5.set_password("securepassword5")
+user2 = UserModel(username="user2", email="user2@example.com", role="customer")
+user2.set_password("user123")
 
-    return [user1, user2, user3, user4, user5]
-
-user_list = create_test_users()
+user_list = [admin_user, staff_user1, staff_user2, user1, user2]

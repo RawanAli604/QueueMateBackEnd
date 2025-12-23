@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from .base import Base
 
 class VenueModel(Base):
@@ -10,3 +10,4 @@ class VenueModel(Base):
     location = Column(String, nullable=False)
     max_capacity = Column(Integer, nullable=False)
     avg_service_time = Column(Integer, nullable=True)  # in minutes
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False) 

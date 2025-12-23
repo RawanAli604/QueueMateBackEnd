@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models.user import UserModel
 from serializers.user import UserSchema, UserLogin, UserToken, UserResponseSchema
+from dependencies.get_current_user import get_current_user
 from database import get_db
 
 router = APIRouter()
@@ -25,6 +26,26 @@ def create_user(user: UserSchema, db: Session = Depends(get_db)):
     db.refresh(new_user)
 
     return new_user
+
+@router.post("/register/staff", response_model=UserResponseSchema)
+def create_staff(user: UserSchema, db: Session = Depends(get_db), current_user: UserModel = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can create staff members")
+
+    existing_user = db.query(UserModel).filter(
+        (UserModel.username == user.username) | (UserModel.email == user.email)
+    ).first()
+
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username or email already exists")
+
+    new_staff = UserModel(username=user.username, email=user.email, role="staff")
+    new_staff.set_password(user.password)
+
+    db.add(new_staff)
+    db.commit()
+    db.refresh(new_staff)
+    return new_staff
 
 @router.post("/login", response_model=UserToken)
 def login(user: UserLogin, db: Session = Depends(get_db)):
