@@ -12,3 +12,10 @@ class WaitlistEntrySchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+class WaitlistEntryResponseSchema(WaitlistEntrySchema):
+    id: int
+    timestamp: str
+
+    class Config:
+    orm_mode = True
