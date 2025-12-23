@@ -1,21 +1,26 @@
-
-from typing import Optional
 from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional
 
 class WaitlistEntrySchema(BaseModel):
+    venue_id: int  # customer sends only venue_id
+
+class WaitlistEntryResponseSchema(BaseModel):
+    id: int
     user_id: int
     venue_id: int
-    status: str = "waiting"
+    status: str
     position: int
-    # will be calculated later that's why it's set to none
     estimated_wait_time: Optional[int] = None
+    timestamp: datetime
 
     class Config:
         orm_mode = True
 
-class WaitlistEntryResponseSchema(WaitlistEntrySchema):
-    id: int
-    timestamp: str
+class WaitlistEntryUpdateSchema(BaseModel):
+    status: Optional[str]
+    position: Optional[int]
+    estimated_wait_time: Optional[int]
 
     class Config:
         orm_mode = True
