@@ -5,6 +5,7 @@ from database import get_db
 from models.user import UserModel
 from models.notification import NotificationModel
 from dependencies.get_current_user import get_current_user
+from serializers.notification import NotificationResponseSchema
 
 router = APIRouter()
 
