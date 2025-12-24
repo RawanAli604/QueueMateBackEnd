@@ -11,3 +11,12 @@ class NotificationSchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+class NotificationResponseSchema(BaseModel):
+    id: int
+    message: str
+    created_at: datetime
+    read: bool
+
+    class Config:
+        orm_mode = True

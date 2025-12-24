@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func, Boolean
 from .base import Base
 
 class NotificationModel(Base):
@@ -11,3 +11,4 @@ class NotificationModel(Base):
     status = Column(String, nullable=False)  # status update from waitlist entry
     message = Column(String, nullable=True)
     timestamp = Column(DateTime, default=func.now())
+    read = Column(Boolean, default=False)
