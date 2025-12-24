@@ -24,3 +24,5 @@ class WaitlistEntryUpdateSchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+

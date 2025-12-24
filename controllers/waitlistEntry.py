@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
+from sqlalchemy import func
+from datetime import datetime
 from models.user import UserModel
 from models.venue import VenueModel
 from models.waitlistEntry import WaitlistEntryModel
@@ -13,7 +15,6 @@ from dependencies.get_current_user import get_current_user
 router = APIRouter()
 
 def recalc_queue_positions_and_eta(db: Session, venue_id: int):
-    """Shift positions & recalc wait times for remaining users"""
     venue = db.query(VenueModel).filter(VenueModel.id == venue_id).first()
     if not venue:
         return
@@ -27,13 +28,23 @@ def recalc_queue_positions_and_eta(db: Session, venue_id: int):
     running_time = 0
 
     for idx, entry in enumerate(waiting_entries, start=1):
+        old_position = entry.position
+
         entry.position = idx
         entry.estimated_wait_time = running_time
         running_time += avg_time
         db.add(entry)
 
-    db.commit()
+        # Notify ONLY if their position changed
+        if old_position != idx:
+            note = NotificationModel(
+                user_id=entry.user_id,
+                message=f"Your position in the queue at {venue.name} is now {idx}.",
+                created_at=datetime.utcnow()
+            )
+            db.add(note)
 
+    db.commit()
 
 def create_notification(db: Session, user_id: int, message: str):
     note = NotificationModel(
@@ -130,13 +141,14 @@ def cancel_waitlist_entry(
     if entry.status not in ["pending", "waiting"]:
         raise HTTPException(status_code=400, detail="This entry can no longer be cancelled")
 
+    status_before = entry.status
     entry.status = "cancelled"
     db.commit()
 
-    recalc_queue_positions_and_eta(db, entry.venue_id)
+    if status_before == "waiting":
+      recalc_queue_positions_and_eta(db, entry.venue_id)
 
     create_notification(db, entry.user_id, "Your waitlist request was cancelled.")
-
     db.refresh(entry)
     return entry
 
@@ -220,3 +232,72 @@ def mark_as_seated(
 
     db.refresh(entry)
     return entry
+
+@router.put("/waitlist/{entry_id}/reject", response_model=WaitlistEntryResponseSchema)
+def reject_waitlist_entry(
+    entry_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    if current_user.role != "staff":
+        raise HTTPException(status_code=403, detail="Only staff can reject waitlist requests")
+
+    entry = db.query(WaitlistEntryModel).filter(
+        WaitlistEntryModel.id == entry_id
+    ).first()
+
+    if not entry:
+        raise HTTPException(status_code=404, detail="Waitlist entry not found")
+
+    venue = db.query(VenueModel).filter(
+        VenueModel.id == entry.venue_id,
+        VenueModel.owner_id == current_user.id
+    ).first()
+
+    if not venue:
+        raise HTTPException(status_code=403, detail="You are not allowed to manage this venue")
+
+    # Can only reject pending requests
+    if entry.status != "pending":
+        raise HTTPException(status_code=400, detail="Only pending entries can be rejected")
+
+    entry.status = "rejected"
+    entry.position = None
+    entry.estimated_wait_time = None
+
+    db.add(entry)
+
+    notification = NotificationModel(
+        user_id=entry.user_id,
+        message=f"Your waitlist request at {venue.name} was rejected.",
+        created_at=datetime.utcnow()
+    )
+
+    db.add(notification)
+    db.commit()
+    db.refresh(entry)
+
+    return entry
+
+@router.get("/waitlist/venue/{venue_id}", response_model=List[WaitlistEntryResponseSchema])
+def get_waitlist_for_venue(
+    venue_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    if current_user.role != "staff":
+        raise HTTPException(status_code=403, detail="Only staff can view venue waitlists")
+
+    venue = db.query(VenueModel).filter(
+        VenueModel.id == venue_id,
+        VenueModel.owner_id == current_user.id
+    ).first()
+
+    if not venue:
+        raise HTTPException(status_code=403, detail="You do not manage this venue")
+
+    waitlist_entries = db.query(WaitlistEntryModel).filter(
+        WaitlistEntryModel.venue_id == venue_id
+    ).all()
+
+    return waitlist_entries
