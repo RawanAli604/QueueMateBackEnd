@@ -17,7 +17,7 @@ def create_user(user: UserSchema, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Username or email already exists")
 
-    new_user = UserModel(username=user.username, email=user.email)
+    new_user = UserModel(username=user.username, email=user.email, role="customer")
     # Use the set_password method to hash the password
     new_user.set_password(user.password)
 
