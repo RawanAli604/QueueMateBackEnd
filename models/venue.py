@@ -9,5 +9,6 @@ class VenueModel(Base):
     name = Column(String, nullable=False)
     location = Column(String, nullable=False)
     max_capacity = Column(Integer, nullable=False)
-    avg_service_time = Column(Integer, nullable=True)  # in minutes
+    avg_service_time = Column(Integer, nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False) 
+    image_url = Column(String, nullable=True)

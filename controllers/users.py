@@ -9,7 +9,6 @@ router = APIRouter()
 
 @router.post("/register", response_model=UserResponseSchema)
 def create_user(user: UserSchema, db: Session = Depends(get_db)):
-    # Check if the username or email already exists
     existing_user = db.query(UserModel).filter(
         (UserModel.username == user.username) | (UserModel.email == user.email)
     ).first()
