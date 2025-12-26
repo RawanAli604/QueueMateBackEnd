@@ -25,4 +25,14 @@ class WaitlistEntryUpdateSchema(BaseModel):
     class Config:
         orm_mode = True
 
+class StaffWaitlistEntrySchema(BaseModel):
+    id: int
+    user_id: int
+    username: str    
+    status: str
+    position: Optional[int]
+    timestamp: datetime
+
+    class Config:
+        orm_mode = True
 

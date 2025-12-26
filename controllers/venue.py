@@ -47,7 +47,7 @@ def create_venue(venue: VenueCreateSchema, db: Session = Depends(get_db), curren
     return new_venue
 
 @router.put("/venue/{venue_id}", response_model=VenueSchema)
-def update_venue(venue_id: int, venue: VenueSchema, db: Session = Depends(get_db), current_user: UserModel = Depends(get_current_user)):
+def update_venue(venue_id: int, venue: VenueCreateSchema, db: Session = Depends(get_db), current_user: UserModel = Depends(get_current_user)):
     db_venue = db.query(VenueModel).filter(VenueModel.id == venue_id).first()
     if not db_venue:
         raise HTTPException(status_code=404, detail="Venue not found")

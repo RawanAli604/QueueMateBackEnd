@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from models.user import UserModel
 from models.venue import VenueModel
@@ -32,6 +32,19 @@ def delete_user(user_id: int, db: Session = Depends(get_db), admin: UserModel = 
     db.commit()
     return {"message": f"User {user.username} deleted successfully"}
 
+@router.get("/admin/analytics")
+def get_admin_analytics(db: Session = Depends(get_db), admin: UserModel = Depends(admin_required)):
+    total_users = db.query(UserModel).count()
+    total_staff = db.query(UserModel).filter(UserModel.role == "staff").count()
+    total_customers = db.query(UserModel).filter(UserModel.role == "customer").count()
+    total_venues = db.query(VenueModel).count()
+
+    return {
+        "total_users": total_users,
+        "total_staff": total_staff,
+        "total_customers": total_customers,
+        "total_venues": total_venues
+    }
 
 @router.delete("/venues/{venue_id}")
 def delete_any_venue(venue_id: int, db: Session = Depends(get_db), admin: UserModel = Depends(admin_required)):

@@ -7,8 +7,7 @@ from datetime import datetime
 from models.user import UserModel
 from models.venue import VenueModel
 from models.waitlistEntry import WaitlistEntryModel
-from models.notification import NotificationModel
-from serializers.waitListEntry import WaitlistEntrySchema, WaitlistEntryResponseSchema
+from serializers.waitListEntry import WaitlistEntrySchema, WaitlistEntryResponseSchema, StaffWaitlistEntrySchema
 from dependencies.get_current_user import get_current_user
 
 
@@ -35,25 +34,6 @@ def recalc_queue_positions_and_eta(db: Session, venue_id: int):
         running_time += avg_time
         db.add(entry)
 
-        # Notify ONLY if their position changed
-        if old_position != idx:
-            note = NotificationModel(
-                user_id=entry.user_id,
-                message=f"Your position in the queue at {venue.name} is now {idx}.",
-                created_at=datetime.utcnow()
-            )
-            db.add(note)
-
-    db.commit()
-
-def create_notification(db: Session, user_id: int, venue_id: int, message: str):
-    note = NotificationModel(
-        user_id=user_id,
-        venue_id=venue_id,
-        message=message,
-        timestamp=datetime.utcnow()
-    )
-    db.add(note)
     db.commit()
 
 @router.post("/waitlist", response_model=WaitlistEntryResponseSchema)
@@ -159,7 +139,6 @@ def cancel_waitlist_entry(
     if status_before == "waiting":
       recalc_queue_positions_and_eta(db, entry.venue_id)
 
-    create_notification(db, entry.user_id, entry.venue_id, "Your waitlist request was cancelled.")
     db.refresh(entry)
     return entry
 
@@ -187,7 +166,6 @@ def approve_waitlist_entry(
     if entry.status != "pending":
         raise HTTPException(status_code=400, detail="Only pending entries can be approved")
 
-    # Assign queue position
     max_pos = db.query(func.max(WaitlistEntryModel.position)).filter(
         WaitlistEntryModel.venue_id == entry.venue_id,
         WaitlistEntryModel.status == "waiting"
@@ -198,12 +176,6 @@ def approve_waitlist_entry(
     entry.estimated_wait_time = (entry.position - 1) * (venue.avg_service_time or 10)
 
     db.commit()
-
-    create_notification(
-        db,
-        entry.user_id,
-        f"You were added to the waiting list for {venue.name}. Position: {entry.position}"
-    )
 
     db.refresh(entry)
     return entry
@@ -238,9 +210,6 @@ def mark_as_seated(
     db.commit()
 
     recalc_queue_positions_and_eta(db, entry.venue_id)
-
-    create_notification(db, entry.user_id, "You have been seated. Enjoy!")
-
     db.refresh(entry)
     return entry
 
@@ -268,7 +237,6 @@ def reject_waitlist_entry(
     if not venue:
         raise HTTPException(status_code=403, detail="You are not allowed to manage this venue")
 
-    # Can only reject pending requests
     if entry.status != "pending":
         raise HTTPException(status_code=400, detail="Only pending entries can be rejected")
 
@@ -277,14 +245,6 @@ def reject_waitlist_entry(
     entry.estimated_wait_time = None
 
     db.add(entry)
-
-    notification = NotificationModel(
-        user_id=entry.user_id,
-        message=f"Your waitlist request at {venue.name} was rejected.",
-        timestamp=datetime.utcnow()
-    )
-
-    db.add(notification)
     db.commit()
     db.refresh(entry)
 
@@ -313,6 +273,40 @@ def get_waitlist_for_venue(
 
     return waitlist_entries
 
+@router.get("/waitlist/venue/{venue_id}/staff", response_model=List[StaffWaitlistEntrySchema])
+def get_waitlist_for_venue_staff(
+    venue_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    if current_user.role != "staff":
+        raise HTTPException(status_code=403, detail="Only staff can view venue waitlists")
+
+    venue = db.query(VenueModel).filter(
+        VenueModel.id == venue_id,
+        VenueModel.owner_id == current_user.id
+    ).first()
+
+    if not venue:
+        raise HTTPException(status_code=403, detail="You do not manage this venue")
+
+    waitlist_entries = db.query(WaitlistEntryModel).filter(
+        WaitlistEntryModel.venue_id == venue_id
+    ).all()
+
+    response = [
+        StaffWaitlistEntrySchema(
+            id=w.id,
+            user_id=w.user_id,
+            username=w.user.username if w.user else "Unknown",
+            status=w.status,
+            position=w.position,
+            timestamp=w.timestamp
+        )
+        for w in waitlist_entries
+    ]
+
+    return response
 
 @router.get("/waitlist/venue/count/{venue_id}")
 def get_waitlist_count_for_venue(

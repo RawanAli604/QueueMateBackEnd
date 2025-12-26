@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
+from sqlalchemy.orm import relationship
 from .base import Base
 
 class WaitlistEntryModel(Base):
@@ -12,3 +13,5 @@ class WaitlistEntryModel(Base):
     position = Column(Integer, nullable=False)
     estimated_wait_time = Column(Integer, nullable=True)
     timestamp = Column(DateTime, default=func.now())
+
+    user = relationship("UserModel")
