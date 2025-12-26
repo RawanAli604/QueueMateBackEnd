@@ -46,11 +46,12 @@ def recalc_queue_positions_and_eta(db: Session, venue_id: int):
 
     db.commit()
 
-def create_notification(db: Session, user_id: int, message: str):
+def create_notification(db: Session, user_id: int, venue_id: int, message: str):
     note = NotificationModel(
         user_id=user_id,
+        venue_id=venue_id,
         message=message,
-        created_at=datetime.utcnow()
+        timestamp=datetime.utcnow()
     )
     db.add(note)
     db.commit()
@@ -68,7 +69,7 @@ def join_waitlist(
     if not venue:
         raise HTTPException(status_code=404, detail="Venue not found")
 
-    # Prevent duplicate entries
+    # Prevent duplicate entries (pending or waiting)
     exists = db.query(WaitlistEntryModel).filter(
         WaitlistEntryModel.user_id == current_user.id,
         WaitlistEntryModel.venue_id == venue.id,
@@ -78,22 +79,32 @@ def join_waitlist(
     if exists:
         raise HTTPException(status_code=400, detail="You already have a waitlist entry for this venue")
 
-    # Create entry as pending 
+    # Get current max position for this venue's active waitlist
+    max_position = db.query(func.max(WaitlistEntryModel.position)).filter(
+        WaitlistEntryModel.venue_id == venue.id,
+        WaitlistEntryModel.status.in_(["pending", "waiting"])
+    ).scalar()
+    new_position = (max_position or 0) + 1
+
+    # Create new waitlist entry
     new_entry = WaitlistEntryModel(
         user_id=current_user.id,
         venue_id=venue.id,
         status="pending",
-        position=0,
+        position=new_position,
         estimated_wait_time=None,
         timestamp=datetime.utcnow()
     )
 
-    db.add(new_entry)
-    db.commit()
-    db.refresh(new_entry)
+    try:
+        db.add(new_entry)
+        db.commit()
+        db.refresh(new_entry)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to join waitlist") from e
 
     return new_entry
-
 
 @router.get("/waitlist/my", response_model=List[WaitlistEntryResponseSchema])
 def get_my_waitlist(
@@ -148,7 +159,7 @@ def cancel_waitlist_entry(
     if status_before == "waiting":
       recalc_queue_positions_and_eta(db, entry.venue_id)
 
-    create_notification(db, entry.user_id, "Your waitlist request was cancelled.")
+    create_notification(db, entry.user_id, entry.venue_id, "Your waitlist request was cancelled.")
     db.refresh(entry)
     return entry
 
@@ -270,7 +281,7 @@ def reject_waitlist_entry(
     notification = NotificationModel(
         user_id=entry.user_id,
         message=f"Your waitlist request at {venue.name} was rejected.",
-        created_at=datetime.utcnow()
+        timestamp=datetime.utcnow()
     )
 
     db.add(notification)
@@ -301,3 +312,16 @@ def get_waitlist_for_venue(
     ).all()
 
     return waitlist_entries
+
+
+@router.get("/waitlist/venue/count/{venue_id}")
+def get_waitlist_count_for_venue(
+    venue_id: int,
+    db: Session = Depends(get_db)
+):
+    count = db.query(WaitlistEntryModel).filter(
+        WaitlistEntryModel.venue_id == venue_id,
+        WaitlistEntryModel.status == "waiting"
+    ).count()
+
+    return {"venue_id": venue_id, "waiting_count": count}

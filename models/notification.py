@@ -8,7 +8,7 @@ class NotificationModel(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False)
-    status = Column(String, nullable=False)  # status update from waitlist entry
     message = Column(String, nullable=True)
+    status = Column(String, nullable=False)  # status update from waitlist entry
     timestamp = Column(DateTime, default=func.now())
     read = Column(Boolean, default=False)

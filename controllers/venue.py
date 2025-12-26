@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models.venue import VenueModel
 from models.user import UserModel
-from serializers.venue import VenueSchema, VenueResponse
+from serializers.venue import VenueSchema, VenueResponse, VenueCreateSchema
 from typing import List
 from database import get_db
 from dependencies.get_current_user import get_current_user
@@ -18,12 +18,14 @@ def get_my_venues(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    if current_user.role not in ["staff"]:
+    if current_user.role != "staff":
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    return db.query(VenueModel).filter(
+    venues = db.query(VenueModel).filter(
         VenueModel.owner_id == current_user.id
     ).all()
+
+    return venues
 
 @router.get("/venue/{venue_id}", response_model=VenueSchema)
 def get_single_venue(venue_id: int, db: Session = Depends(get_db)):
@@ -33,7 +35,7 @@ def get_single_venue(venue_id: int, db: Session = Depends(get_db)):
     return venue
 
 @router.post("/venue", response_model=VenueResponse)
-def create_venue(venue: VenueSchema, db: Session = Depends(get_db), current_user: UserModel = Depends(get_current_user)):
+def create_venue(venue: VenueCreateSchema, db: Session = Depends(get_db), current_user: UserModel = Depends(get_current_user)):
     if current_user.role != "staff":
         raise HTTPException(status_code=403, detail="Only staff can create venues")
 
